@@ -27,7 +27,7 @@ jobs:
           echo "Search results saved to users.json"
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: users-data  # Give your artifact a name
           path: users.json # The path to the file you want to save
