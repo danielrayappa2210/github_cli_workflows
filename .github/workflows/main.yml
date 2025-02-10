@@ -1,0 +1,38 @@
+name: Search GitHub Users, Find Newest Member, and Get Join Date/Time
+
+on:
+  workflow_dispatch: # Manual trigger
+
+jobs:
+  search_users:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Search users and save to file
+        id: search
+        run: |
+          SEARCH_RESULT=$(gh search users "location:Bangalore followers:>110" --json login,name,location,followers,created_at --jq '.items[] | {login, name, location, followers, created_at} | select(.followers > 110)')
+          echo "$SEARCH_RESULT" > users.json
+          echo "Search results saved to users.json"
+
+      - name: Find newest member
+        id: newest
+        run: |
+          NEWEST_MEMBER=$(jq -r '.[] | sort_by(.created_at) | last' users.json)
+          echo "::set-output name=newest::$NEWEST_MEMBER"
+
+      - name: Display newest member (optional)
+        run: |
+          echo "Newest member:"
+          echo "${{ steps.newest.outputs.newest }}"
+
+      - name: Use newest member's data (example - Get created_at)
+        run: |
+          CREATED_AT=$(echo "${{ steps.newest.outputs.newest }}" | jq -r '.created_at')
+          echo "Newest member's join date and time (ISO 8601): $CREATED_AT"
+          # You can now use the $CREATED_AT variable in subsequent steps
+          # For example, you can set it as an environment variable:
+          echo "NEWEST_MEMBER_JOINED=$CREATED_AT" >> $GITHUB_ENV
+          echo "Join date from env: ${{ env.NEWEST_MEMBER_JOINED }}"
