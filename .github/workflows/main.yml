@@ -13,7 +13,7 @@ jobs:
       - name: Search users (using API)
         id: search
         run: |
-          SEARCH_RESULT=$(curl -s "https://api.github.com/search/users?q=location:Bangalore+followers:>110&per_page=100" | jq -r '.items[] | {login, name, location, followers, created_at}')
+          SEARCH_RESULT=$(curl -s "https://api.github.com/search/users?q=location:Bangalore+followers:>110&per_page=100" | jq '.items[] | {login, name, location, followers, created_at}') # No -r here!
           # Check if the result is a single object or an array
           if [[ "$SEARCH_RESULT" == "null" ]]; then
             echo "No users found"
@@ -29,8 +29,8 @@ jobs:
         id: newest
         run: |
           if [[ -s users.json ]]; then # Check if users.json is not empty
-            NEWEST_MEMBER=$(jq -r '.[] | sort_by(.created_at) | last' users.json)
-            echo "::set-output name=newest::$NEWEST_MEMBER"
+             NEWEST_MEMBER=$(jq '.[] | sort_by(.created_at) | last' users.json) # No -r here!
+             echo "::set-output name=newest::$NEWEST_MEMBER"
           else
             echo "users.json is empty. No newest member to find."
             exit 0 # Exit successfully if the file is empty
