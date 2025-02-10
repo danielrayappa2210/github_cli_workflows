@@ -10,10 +10,10 @@ jobs:
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
 
-      - name: Search users and save to file
+      - name: Search users (using API)
         id: search
         run: |
-          SEARCH_RESULT=$(gh search users "location:Bangalore followers:>110" --json login,name,location,followers,created_at --jq '.items[] | {login, name, location, followers, created_at} | select(.followers > 110)')
+          SEARCH_RESULT=$(curl -s "https://api.github.com/search/users?q=location:Bangalore+followers:>110&per_page=100" | jq -r '.items[] | {login, name, location, followers, created_at}') # Increased per_page
           echo "$SEARCH_RESULT" > users.json
           echo "Search results saved to users.json"
 
@@ -32,7 +32,5 @@ jobs:
         run: |
           CREATED_AT=$(echo "${{ steps.newest.outputs.newest }}" | jq -r '.created_at')
           echo "Newest member's join date and time (ISO 8601): $CREATED_AT"
-          # You can now use the $CREATED_AT variable in subsequent steps
-          # For example, you can set it as an environment variable:
           echo "NEWEST_MEMBER_JOINED=$CREATED_AT" >> $GITHUB_ENV
           echo "Join date from env: ${{ env.NEWEST_MEMBER_JOINED }}"
