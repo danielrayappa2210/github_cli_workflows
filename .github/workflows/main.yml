@@ -1,23 +1,27 @@
-name: Get GitHub Users
+name: Get My GitHub Data
 
 on:
-  workflow_dispatch: # Allows you to manually trigger the workflow
+  workflow_dispatch:
 
 jobs:
-  get_users:
+  get_my_data:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Get GitHub Users
+      - name: Get My Data
         run: |
-          SEARCH_RESULT=$(curl -s "https://api.github.com/search/users?q=location:Bangalore+followers:>110&per_page=100" | jq '.items[] | {login, name: .user.name, location: .user.location, followers: .user.followers, created_at: .user.created_at}')
-          echo "$SEARCH_RESULT" > users.json
-          echo "Search results saved to users.json" # Confirmation message
+          # Replace YOUR_GITHUB_USERNAME with your actual GitHub username
+          USERNAME="danielrayappa2210" 
+          curl -s "https://api.github.com/users/$USERNAME" > my_data.json
+          echo "My data saved to my_data.json"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: users-data
-          path: users.json
+          name: my-github-data
+          path: my_data.json
+
+      - name: Display JSON Content (optional)
+        run: cat my_data.json
