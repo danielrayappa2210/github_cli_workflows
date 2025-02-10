@@ -1,53 +1,21 @@
-name: Search GitHub Users, Find Newest Member, and Get Join Date/Time
+name: Extract and Sort Users
 
 on:
-  workflow_dispatch: # Manual trigger
+  workflow_dispatch:
 
 jobs:
-  search_users:
+  extract_users:
     runs-on: ubuntu-latest
     steps:
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
 
-      - name: Search users (using API)
-        id: search
+      - name: Extract and sort users
         run: |
-          SEARCH_RESULT=$(curl -s "https://api.github.com/search/users?q=location:Bangalore+followers:>110&per_page=100" | jq '.items[] | {login, name, location, followers, created_at}') # No -r here!
-          # Check if the result is a single object or an array
-          if [[ "$SEARCH_RESULT" == "null" ]]; then
-            echo "No users found"
-            exit 0 # Exit successfully if no users are found
-          elif echo "$SEARCH_RESULT" | jq -e 'type == "array"' > /dev/null; then
-            echo "$SEARCH_RESULT" > users.json # It's an array, write directly
-          else
-            echo "[$SEARCH_RESULT]" > users.json # It's a single object, wrap in array
-          fi
-          echo "Search results saved to users.json"
+          gh search users "location:Bangalore followers:>110" --json name,location,created_at | jq -r '.items[] | {name, location, created_at} | sort_by(.created_at) | reverse | .[:10]' > users_sorted.json
 
-      - name: Find newest member
-        id: newest
-        run: |
-          if [[ -s users.json ]]; then # Check if users.json is not empty
-             NEWEST_MEMBER=$(jq '.[] | sort_by(.created_at) | last' users.json) # No -r here!
-             echo "::set-output name=newest::$NEWEST_MEMBER"
-          else
-            echo "users.json is empty. No newest member to find."
-            exit 0 # Exit successfully if the file is empty
-          fi
-
-      - name: Display newest member (optional)
-        run: |
-          echo "Newest member:"
-          echo "${{ steps.newest.outputs.newest }}"
-
-      - name: Use newest member's data (example - Get created_at)
-        run: |
-          if [[ -n "${{ steps.newest.outputs.newest }}" ]]; then # Check if newest member was found
-            CREATED_AT=$(echo "${{ steps.newest.outputs.newest }}" | jq -r '.created_at')
-            echo "Newest member's join date and time (ISO 8601): $CREATED_AT"
-            echo "NEWEST_MEMBER_JOINED=$CREATED_AT" >> $GITHUB_ENV
-            echo "Join date from env: ${{ env.NEWEST_MEMBER_JOINED }}"
-          else
-            echo "No newest member data to process."
-          fi
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: users-data
+          path: users_sorted.json
